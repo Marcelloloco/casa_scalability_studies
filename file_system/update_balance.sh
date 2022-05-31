@@ -1,5 +1,5 @@
 #!/bin/bash
-file="balance.dat"
+file="/lfs/mtrattner/balance.dat"
 value=$(cat $file)
 echo "Read current balance:$value"
 
