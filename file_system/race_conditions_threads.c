@@ -7,17 +7,17 @@ void* access_file(void *stream) {
     pid_t x = syscall(__NR_gettid);
     FILE *fp = (FILE*) stream;
 
-    fseek(fp, 3L, SEEK_SET); 
-    usleep(10L);
-
-    printf("%c | Akt.Pos. = %li, ID: %d\n", getc(fp), ftell(fp), x); 
-    
+    fseek(fp, 0, SEEK_SET);
+    for(int i=0; i<11; i++){
+        usleep(10L);
+        printf("%c | Akt.Pos. = %li, ID: %i \n", getc(fp), ftell(fp), x);
+    }
     return NULL;
 }
 
 int main() {
     FILE *fp;
-    fp = fopen("/lfs/mtrattner/test.txt","r"); 
+    fp = fopen("test.txt","r"); 
 
     pthread_t thread_1;
     pthread_t thread_2;

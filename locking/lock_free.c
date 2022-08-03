@@ -1,48 +1,51 @@
-#include "stack.h"
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <stdatomic.h>
 #include <pthread.h>
+#include <stdlib.h>
 
-_Atomic lfstack_t top = {0, NULL};
-int limit_numbers = 100;
-int num_threads = 10;
 
- 
-void *push(void *input)
-{
-    for(int i=0; i<limit_numbers; i++)
+int counter = 0;
+int num_threads, limit;
+
+void* count(void *var) {
+    int limit = *((int*) var);
+
+    int tmp;
+    for(size_t i = 0; i < limit; i++)
     {
-        lfstack_push(&top, i);
-        printf("push %d\n",i);
-    }    
-    pthread_exit(NULL);
-}
-
-void *pop(void *input)
-{
-    for(int i=0; i<limit_numbers;)
-    {
-        int result;
-        result = lfstack_pop(&top);
-        if(result == -1)
-            printf("the stack is empty\n");
-        else
-        {
-            i++;
-        }
-
+        do {
+            tmp = counter;
+            usleep(1L);
+        } while(!atomic_compare_exchange_weak(&counter, &tmp, tmp+1));
     }
-    pthread_exit(NULL);
+    return NULL;
 }
 
-int main()
+int main(int argc, char const *argv[])
 {
-    int num_twice = num_threads*2;
-    pthread_t tid[num_twice];
+    if (argc < 2) {
+        num_threads = 1;
+    } else {
+        num_threads = strtol(argv[1], NULL, 10);
+    }
 
-    for(int i=0; i<num_threads; i++)
-        pthread_create(&tid[i],NULL,push,NULL);
-    for(int i=num_threads; i<num_twice; i++)
-        pthread_create(&tid[i],NULL,pop,NULL);
-    for(int i=0; i<num_twice; i++)
-        pthread_join(tid[i],NULL);  
+    limit = 1000000 / num_threads;
+    pthread_t threads[num_threads];
+    
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        pthread_create(&threads[i], NULL, count, (void*) &limit);
+    }
+    
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Used number of threads: %i\n", num_threads);
+    printf("The final result of unlocked_count: %i\n", counter);
+
     return 0;
 }
